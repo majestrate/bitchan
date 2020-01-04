@@ -1,3 +1,7 @@
 *.key
 *.db
 .vscode
+node_modules
+*.min.js
+file_storage
+*.dat

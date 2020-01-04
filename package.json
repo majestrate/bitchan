@@ -1,0 +1,18 @@
+{
+  "name": "bitchan",
+  "version": "1.0.0",
+  "description": "the web was a mistake",
+  "main": "js/bitchan.ts",
+  "repository": "https://github.com/majestrate/bitchan/",
+  "author": "Jeff Becker <jeff@i2p.rocks>",
+  "license": "ZLIB",
+  "private": true,
+  "dependencies": {
+    "typescript": "^3.7.4",
+    "uglify-js": "^3.7.3"
+  },
+  "scripts" : {
+    "the-web-was-a-mistake": "tsc ts/bitchan.ts --outFile /dev/stdout | uglifyjs --compress --mangle > webroot/static/bitchan.min.js",
+    "nuke-from-orbit" : "rm -f webroot/static/bitchan.min.js"
+  }
+}

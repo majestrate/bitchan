@@ -1,0 +1,27 @@
+{{ define "base/index.html.tmpl" }}
+<html>
+  <head>
+    <title> {{title}} </title>
+    <link rel="stylesheet" href="/static/style.css" />
+    <link rel="stylesheet" href="/static/override.css" />
+    <script type="text/javascript" src="/static/bitchan.js">
+    </script>
+  </head>
+  <body>
+    <noscript>
+      yes this requires js. no it won't work without it. yes i hate it too, the web was a mistake.
+    </noscript>
+    <div id="bitchan_root">
+    </div>
+    <script>
+      const e = document.getElementById("bitchan_root");
+      window.bitchan = new BitChanUI();
+      window.bitchan.InjectUI(e);
+      setInterval(() => {
+        let now = new Date();
+        window.bitchan.Update(now.getDate());
+      });
+    </script>
+  </body>
+</html>
+{{ end }}

@@ -137,6 +137,8 @@ func (m *MiddleWare) makeAdminPost(hdr *multipart.FileHeader) (p *model.Post, er
 }
 
 func (m *MiddleWare) SetupRoutes() {
+	m.router.LoadHTMLGlob("templates/**/*")
+
 	// sendresult sends signed result
 	sendResult := func(c *gin.Context, buf *bytes.Buffer, ct string) {
 		sig := ed25519.Sign(m.privkey, buf.Bytes())
@@ -144,6 +146,14 @@ func (m *MiddleWare) SetupRoutes() {
 		c.Header("Content-Type", ct)
 		c.String(http.StatusOK, buf.String())
 	}
+
+	m.router.GET("/", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "base/index.html.tmpl", gin.H{
+			"title": "bitchan on " + m.hostname,
+		})
+	})
+
+	m.router.StaticFS("/static", http.Dir(filepath.Join("webroot", "static")))
 
 	m.router.StaticFS("/files", http.Dir(m.Api.Storage.GetRoot()))
 
