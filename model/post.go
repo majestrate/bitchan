@@ -8,10 +8,10 @@ import (
 
 type Post struct {
 	MetaInfoURL string `bencode:"bitchan-metainfo-url"`
-	Version     string `bencode:"bitchan-version"`
+	Version     string `bencode:"bitchan-version",omit-empty`
 	PostedAt    int64  `bencode:"bitchan-posted-at"`
 	PubKey      string `bencode:"bitchan-poster-pubkey"`
-	Signature   string `bencode:"Z",omit-empty`
+	Signature   string `bencode:"z",omit-empty`
 }
 
 func (p *Post) encode() []byte {
@@ -22,9 +22,10 @@ func (p *Post) encode() []byte {
 }
 
 func (p *Post) Verify() bool {
+	sig := []byte(p.Signature)
+	p.Signature = ""
 	msg := p.encode()
 	k := ed25519.PublicKey([]byte(p.PubKey))
-	sig := []byte(p.Signature)
 	return ed25519.Verify(k, msg, sig)
 }
 
@@ -36,7 +37,7 @@ func (p *Post) Sign(sk ed25519.PrivateKey) {
 
 type PostResponse struct {
 	Response string `bencode:"bitchan-post-response"`
-	Version  string `bencode:"bitchan-version"`
+	Version  string `bencode:"bitchan-version",omit-empty`
 	Time     int64  `bencode:"bitchan-time"`
 }
 

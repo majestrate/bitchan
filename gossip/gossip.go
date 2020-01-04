@@ -7,7 +7,7 @@ import (
 
 type Gossiper interface {
 	BroadcastLocalPost(*model.Post)
-	AddNeigboor(u *url.URL) bool
+	AddNeighboor(u *url.URL) bool
 	Stop()
 	Bootstrap()
 	ForEachPeer(func(model.Peer))

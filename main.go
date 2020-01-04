@@ -42,7 +42,7 @@ func main() {
 	h.Api = api.NewAPI()
 
 	h.Api.Storage = storage.NewStorage()
-	h.Api.Storage.SetRoot("storage")
+	h.Api.Storage.SetRoot("file_storage")
 	h.Api.Gossip = gossip.NewServer()
 	h.Api.Torrent = torrent.NewGrabber(h.Api.Storage, h.Api.Gossip)
 
@@ -57,6 +57,7 @@ func main() {
 		h.Stop()
 	})
 	go func() {
+		h.SetupRoutes()
 		log.Infof("staring up...")
 		s.ListenAndServe()
 	}()

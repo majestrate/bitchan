@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/majestrate/bitchan/api"
 	"github.com/majestrate/bitchan/gossip"
@@ -12,10 +14,12 @@ import (
 	"github.com/zeebo/bencode"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -26,6 +30,7 @@ type MiddleWare struct {
 	privkey  ed25519.PrivateKey
 	self     model.Peer
 	hostname string
+	port     string
 }
 
 func (m *MiddleWare) EnsureKeyFile(fname string) error {
@@ -75,6 +80,62 @@ func newDecoder(r io.Reader) *bencode.Decoder {
 	return dec
 }
 
+func (m *MiddleWare) makeFilesURL(fname string) string {
+	return "http://" + net.JoinHostPort(m.hostname, m.port) + "/files/" + filepath.Base(fname)
+}
+
+func mktmp(ext string) string {
+	now := time.Now().UnixNano()
+	var b [4]byte
+	rand.Read(b[:])
+	r := strings.Trim(base64.URLEncoding.EncodeToString(b[:]), "=")
+	return filepath.Join(os.TempDir(), fmt.Sprintf("%d-%s%s", now, r, ext))
+}
+
+func (m *MiddleWare) makeAdminPost(hdr *multipart.FileHeader) (p *model.Post, err error) {
+	h := sha256.New()
+	ext := filepath.Ext(hdr.Filename)
+	tmpfile := mktmp(ext)
+	inf, err := hdr.Open()
+	if err != nil {
+		return nil, err
+	}
+	defer inf.Close()
+	of, err := os.Create(tmpfile)
+	if err != nil {
+		return nil, err
+	}
+	r := io.TeeReader(inf, h)
+	_, err = io.Copy(of, r)
+	of.Close()
+	if err != nil {
+		os.Remove(tmpfile)
+		return nil, err
+	}
+	d := h.Sum(nil)
+	fname := base64.URLEncoding.EncodeToString(d[:]) + ext
+	fname = filepath.Join(m.Api.Storage.GetRoot(), fname)
+	err = os.Rename(tmpfile, fname)
+	if err != nil {
+		os.Remove(tmpfile)
+		return nil, err
+	}
+	torrentFile := fname + ".torrent"
+	err = m.Api.MakeTorrent(fname, torrentFile)
+	if err != nil {
+		os.Remove(fname)
+		os.Remove(torrentFile)
+		return nil, err
+	}
+	now := time.Now().UnixNano()
+	p = &model.Post{
+		MetaInfoURL: m.makeFilesURL(torrentFile),
+		PostedAt:    now,
+	}
+	p.Sign(m.privkey)
+	return p, nil
+}
+
 func (m *MiddleWare) SetupRoutes() {
 	// sendresult sends signed result
 	sendResult := func(c *gin.Context, buf *bytes.Buffer, ct string) {
@@ -84,8 +145,65 @@ func (m *MiddleWare) SetupRoutes() {
 		c.String(http.StatusOK, buf.String())
 	}
 
-	m.router.POST("/bitchan/v1/user/post", func(c *gin.Context) {
+	m.router.StaticFS("/files", http.Dir(m.Api.Storage.GetRoot()))
 
+	m.router.GET("/bitchan/v1/admin/add-peer", func(c *gin.Context) {
+		rhost, _, err := net.SplitHostPort(c.Request.RemoteAddr)
+		rip := net.ParseIP(rhost)
+		if !rip.IsLoopback() {
+			// deny
+			c.String(http.StatusForbidden, "nah")
+			return
+		}
+		u := c.DefaultQuery("url", "")
+		if u == "" {
+			c.String(http.StatusBadRequest, "no url provided")
+			return
+		}
+		remote, err := url.Parse(u)
+		if err != nil {
+			c.String(http.StatusBadRequest, err.Error())
+			return
+		}
+		if m.Api.Gossip.AddNeighboor(remote) {
+			c.String(http.StatusCreated, "added")
+		} else {
+			c.String(http.StatusBadRequest, "not added")
+		}
+	})
+
+	m.router.POST("/bitchan/v1/admin/post", func(c *gin.Context) {
+		rhost, _, _ := net.SplitHostPort(c.Request.RemoteAddr)
+		rip := net.ParseIP(rhost)
+		if !rip.IsLoopback() {
+			// deny
+			c.String(http.StatusForbidden, "nah")
+			return
+		}
+		f, err := c.FormFile("file")
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		p, err := m.makeAdminPost(f)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		m.Api.Gossip.BroadcastLocalPost(p)
+		c.String(http.StatusCreated, "posted")
+	})
+
+	m.router.GET("/bitchan/v1/admin/bootstrap", func(c *gin.Context) {
+		rhost, _, _ := net.SplitHostPort(c.Request.RemoteAddr)
+		rip := net.ParseIP(rhost)
+		if !rip.IsLoopback() {
+			// deny
+			c.String(http.StatusForbidden, "nah")
+			return
+		}
+		go m.Api.Gossip.Bootstrap()
+		c.String(http.StatusCreated, "bootstrap started")
 	})
 
 	m.router.GET("/bitchan/v1/self", func(c *gin.Context) {
@@ -137,11 +255,43 @@ func (m *MiddleWare) SetupRoutes() {
 			c.String(http.StatusBadRequest, err.Error())
 			return
 		}
-		if m.Api.Gossip.AddNeigboor(u) {
+		if m.Api.Gossip.AddNeighboor(u) {
 			c.String(http.StatusCreated, "")
 		} else {
 			c.String(http.StatusForbidden, "not added")
 		}
+	})
+	m.router.POST("/bitchan/v1/federate", func(c *gin.Context) {
+		ct := c.Request.Header.Get("Content-Type")
+		if ct != gossip.HttpFeedMimeType {
+			c.String(http.StatusForbidden, "")
+			return
+		}
+
+		var p model.Post
+		defer c.Request.Body.Close()
+		dec := newDecoder(c.Request.Body)
+		err := dec.Decode(&p)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		if !p.Verify() {
+			c.String(http.StatusForbidden, "bad post signature")
+			return
+		}
+		err = m.Api.Torrent.Grab(p.MetaInfoURL)
+		if err != nil {
+			c.String(http.StatusInternalServerError, err.Error())
+			return
+		}
+		var result model.PostResponse
+		result.Response = "accepted"
+		result.Time = time.Now().UnixNano()
+		buf := new(bytes.Buffer)
+		enc := bencode.NewEncoder(buf)
+		enc.Encode(result)
+		sendResult(c, buf, gossip.HttpFeedMimeType)
 	})
 	m.router.GET("/bitchan/v1/federate", func(c *gin.Context) {
 		var list model.PeerList
@@ -176,10 +326,10 @@ func New(host string, port string) *MiddleWare {
 		Api:      nil,
 		router:   gin.Default(),
 		hostname: host,
+		port:     port,
 		self: model.Peer{
 			URL: "http://" + net.JoinHostPort(host, port) + "/bitchan/v1/federate",
 		},
 	}
-	m.SetupRoutes()
 	return m
 }

@@ -15,7 +15,7 @@ var log = logrus.New()
 var ErrNotAdded = errors.New("torrent not addded")
 
 type Grabber struct {
-	client   *torrent.Client
+	Client   *torrent.Client
 	gossiper gossip.Gossiper
 	store    storage.Store
 }
@@ -41,7 +41,7 @@ func (g *Grabber) Grab(metainfoURL string) error {
 		}).Error("reading metainfo failed")
 		return err
 	}
-	t, err := g.client.AddTorrent(mi)
+	t, err := g.Client.AddTorrent(mi)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"url": metainfoURL,
@@ -58,15 +58,16 @@ func (g *Grabber) Grab(metainfoURL string) error {
 }
 
 func (g *Grabber) Stop() {
-	g.client.Close()
+	g.Client.Close()
 }
 
 func NewGrabber(st storage.Store, g gossip.Gossiper) *Grabber {
 	cfg := torrent.NewDefaultClientConfig()
 	cfg.DataDir = st.GetRoot()
+	cfg.Seed = true
 	t, _ := torrent.NewClient(cfg)
 	return &Grabber{
-		client:   t,
+		Client:   t,
 		gossiper: g,
 		store:    st,
 	}

@@ -49,7 +49,7 @@ func (g *httpGossiper) Bootstrap() {
 					continue
 				}
 				if u.Host == name {
-					g.AddNeigboor(u)
+					g.AddNeighboor(u)
 				}
 			}
 		}()
@@ -66,7 +66,7 @@ func (g *httpGossiper) BroadcastLocalPost(p *model.Post) {
 	})
 }
 
-func (g *httpGossiper) AddNeigboor(n *url.URL) bool {
+func (g *httpGossiper) AddNeighboor(n *url.URL) bool {
 	_, has := g.neighboors.Load(n.Host)
 	if has {
 		log.WithFields(logrus.Fields{
