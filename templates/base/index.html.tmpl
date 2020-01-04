@@ -17,10 +17,6 @@
       const e = document.getElementById("bitchan_root");
       window.bitchan = new BitChanUI();
       window.bitchan.InjectUI(e);
-      setInterval(() => {
-        let now = new Date();
-        window.bitchan.Update(now.getDate());
-      });
     </script>
   </body>
 </html>

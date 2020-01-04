@@ -26,6 +26,9 @@ func (p *Post) Verify() bool {
 	p.Signature = ""
 	msg := p.encode()
 	k := ed25519.PublicKey([]byte(p.PubKey))
+	if len(k) == 0 {
+		return false
+	}
 	return ed25519.Verify(k, msg, sig)
 }
 

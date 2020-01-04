@@ -27,7 +27,7 @@ func (f *HttpFeed) Stop() {
 func newHttpFeed(u *url.URL, pk ed25519.PublicKey) *HttpFeed {
 	return &HttpFeed{
 		u:  u,
-		pk: pk,
+		pk: pk[:],
 	}
 }
 
@@ -41,6 +41,10 @@ func newDecoder(r io.Reader) *bencode.Decoder {
 
 func (f *HttpFeed) verifySig(body *bytes.Buffer, sig []byte) bool {
 	return ed25519.Verify(f.pk, body.Bytes(), sig)
+}
+
+func encodeKey(pk ed25519.PublicKey) string {
+	return base64.StdEncoding.EncodeToString(pk[:])
 }
 
 func doPost(remoteURL string, obj interface{}) error {
@@ -100,8 +104,8 @@ func (f *HttpFeed) FetchNeighboors() *model.PeerList {
 	}
 	defer resp.Body.Close()
 	buf := new(bytes.Buffer)
-	io.Copy(buf, resp.Body)
-	dec := newDecoder(buf)
+	r := io.TeeReader(resp.Body, buf)
+	dec := newDecoder(r)
 	err = dec.Decode(&list)
 	if err != nil {
 		log.WithFields(logrus.Fields{
@@ -116,7 +120,7 @@ func (f *HttpFeed) FetchNeighboors() *model.PeerList {
 	log.WithFields(logrus.Fields{
 		"url": remoteURL,
 		"sig": val,
-		"pk":  f.pk,
+		"pk":  encodeKey(f.pk),
 	}).Error("signature verify failed")
 	return nil
 

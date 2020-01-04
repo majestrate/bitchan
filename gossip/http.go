@@ -88,7 +88,7 @@ func (g *httpGossiper) AddNeighboor(n *url.URL) bool {
 		}
 		defer resp.Body.Close()
 		dec := base64.NewDecoder(base64.StdEncoding, resp.Body)
-		var pk ed25519.PublicKey
+		pk := make(ed25519.PublicKey, 32)
 		_, err = io.ReadFull(dec, pk[:])
 		if err != nil {
 			log.WithFields(logrus.Fields{
