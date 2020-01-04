@@ -18,9 +18,10 @@ import (
 )
 
 type MiddleWare struct {
-	Api     *api.ApiServer
-	router  *gin.Engine
-	privkey ed25519.PrivateKey
+	Api      *api.ApiServer
+	router   *gin.Engine
+	privkey  ed25519.PrivateKey
+	hostname string
 }
 
 func (m *MiddleWare) EnsureKeyFile(fname string) error {
@@ -90,6 +91,10 @@ func (m *MiddleWare) SetupRoutes() {
 			list.Peers[u.Host] = p
 		})
 
+		list.Peers[m.hostname] = model.Peer{
+			URL: "http://" + m.hostname + "/bitchan/v1/federate",
+		}
+
 		buf := new(bytes.Buffer)
 		enc := bencode.NewEncoder(buf)
 		err := enc.Encode(list)
@@ -105,10 +110,11 @@ func (m *MiddleWare) Stop() {
 	m.Api.Stop()
 }
 
-func New() *MiddleWare {
+func New(host string) *MiddleWare {
 	m := &MiddleWare{
-		Api:    nil,
-		router: gin.Default(),
+		Api:      nil,
+		router:   gin.Default(),
+		hostname: host,
 	}
 	m.SetupRoutes()
 	return m
