@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"encoding/base64"
 	"github.com/majestrate/bitchan/model"
+	"github.com/sirupsen/logrus"
 	"io"
 	"net/http"
 	"net/url"
@@ -65,21 +66,38 @@ func (g *httpGossiper) BroadcastLocalPost(p *model.Post) {
 	})
 }
 
-func (g *httpGossiper) AddNeigboor(n *url.URL) {
+func (g *httpGossiper) AddNeigboor(n *url.URL) bool {
 	_, has := g.neighboors.Load(n.Host)
-	if !has {
+	if has {
+		log.WithFields(logrus.Fields{
+			"host": n.Host,
+		}).Error("already have neighboor")
+		return false
+	} else {
 		// read pubkey
-		resp, err := http.Get(n.String())
+		pkurl, _ := url.Parse(n.String())
+		pkurl.Path = "/bitchan/v1/pubkey"
+		resp, err := http.Get(pkurl.String())
 		if err != nil {
-			return
+
+			log.WithFields(logrus.Fields{
+				"url":   pkurl.String(),
+				"error": err,
+			}).Error("failed to do request")
+			return false
 		}
 		defer resp.Body.Close()
-		dec := base64.NewDecoder(base64.URLEncoding, resp.Body)
+		dec := base64.NewDecoder(base64.StdEncoding, resp.Body)
 		var pk ed25519.PublicKey
 		_, err = io.ReadFull(dec, pk[:])
 		if err != nil {
-			return
+			log.WithFields(logrus.Fields{
+				"url":   pkurl.String(),
+				"error": err,
+			}).Error("failed to read pubkey")
+			return false
 		}
 		g.neighboors.Store(n.Host, newHttpFeed(n, pk))
+		return true
 	}
 }
