@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/majestrate/bitchan/api"
+	"github.com/majestrate/bitchan/db"
 	"github.com/majestrate/bitchan/gossip"
 	"github.com/majestrate/bitchan/model"
 	"github.com/majestrate/bitchan/network"
@@ -47,7 +48,13 @@ func main() {
 	h := web.New(host, port)
 	h.EnsureKeyFile("identity.key")
 	h.Api = api.NewAPI()
-
+	h.DB, err = db.NewPQ(db.Config{URL: "host=/var/run/postgresql"})
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error": err,
+		}).Error("Failed to open database")
+		return
+	}
 	h.Api.Storage = storage.NewStorage()
 	h.Api.Storage.SetRoot("file_storage")
 	h.Api.Gossip = gossip.NewServer()

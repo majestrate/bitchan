@@ -21,6 +21,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -32,6 +33,7 @@ type MiddleWare struct {
 	self     model.Peer
 	hostname string
 	port     string
+	DB       db.Facade
 }
 
 func (m *MiddleWare) AddPeerList(l model.PeerList) {
@@ -176,7 +178,7 @@ func (m *MiddleWare) SetupRoutes() {
 		if limit > 10 {
 			limit = 10
 		}
-		posts, err := m.db.GetThreads(limit)
+		posts, err := m.DB.GetThreads(limit)
 		c.JSON(http.StatusOK, gin.H{
 			"posts": posts,
 			"error": err,
