@@ -2,12 +2,15 @@
 
 bittorrent imageboard 
 
+(this software is experimental and probably doesn't work rn or ever)
+
 ## build deps
 
 * go 1.13.x
 * yarn
 * GNU Make
 * git
+* postgresql
 
 ## building
 
