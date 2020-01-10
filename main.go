@@ -11,12 +11,19 @@ import (
 	"github.com/majestrate/bitchan/web"
 	"github.com/sirupsen/logrus"
 	"github.com/zeebo/bencode"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
 )
 
 var log = logrus.New()
+
+func newDecoder(r io.Reader) *bencode.Decoder {
+	dec := bencode.NewDecoder(r)
+	dec.SetFailOnUnorderedKeys(true)
+	return dec
+}
 
 func main() {
 	var err error
@@ -59,6 +66,15 @@ func main() {
 	go func() {
 		h.SetupRoutes()
 		log.Infof("staring up...")
+		f, err := os.Open("peers.dat")
+		if err == nil {
+			defer f.Close()
+			var list model.PeerList
+			list.Peers = make(map[string]model.Peer)
+			dec := newDecoder(f)
+			dec.Decode(&list)
+			go h.AddPeerList(list)
+		}
 		s.ListenAndServe()
 	}()
 	signals.Wait()

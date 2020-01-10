@@ -1,22 +1,24 @@
 {{ define "base/index.html.tmpl" }}
+<!doctype html>
 <html>
   <head>
     <title> {{.title}} </title>
     <link rel="stylesheet" href="/static/style.css" />
     <link rel="stylesheet" href="/static/override.css" />
-    <script type="text/javascript" src="/static/bitchan.min.js">
+    <link rel="icon" href="/static/favicon.png" />
+    <meta charset="utf-8" />
+    <script type="text/javascript" src="/static/wasm_exec.min.js">
     </script>
   </head>
   <body>
     <noscript>
       yes this requires js. no it won't work without it. yes i hate it too, the web was a mistake.
     </noscript>
-    <div id="bitchan_root">
-    </div>
     <script>
-      const e = document.getElementById("bitchan_root");
-      window.bitchan = new BitChanUI();
-      window.bitchan.InjectUI(e);
+      const go = new Go();
+      WebAssembly.instantiateStreaming(fetch("/static/bitchan.wasm"), go.importObject).then((result) => {
+        go.run(result.instance);
+      });
     </script>
   </body>
 </html>

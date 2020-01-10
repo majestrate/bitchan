@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/majestrate/bitchan/api"
+	"github.com/majestrate/bitchan/db"
 	"github.com/majestrate/bitchan/gossip"
 	"github.com/majestrate/bitchan/model"
 	"github.com/zeebo/bencode"
@@ -31,6 +32,15 @@ type MiddleWare struct {
 	self     model.Peer
 	hostname string
 	port     string
+}
+
+func (m *MiddleWare) AddPeerList(l model.PeerList) {
+	for _, peer := range l.Peers {
+		u, _ := url.Parse(peer.URL)
+		if u != nil {
+			m.Api.Gossip.AddNeighboor(u)
+		}
+	}
 }
 
 func (m *MiddleWare) EnsureKeyFile(fname string) error {
@@ -92,7 +102,7 @@ func mktmp(ext string) string {
 	return filepath.Join(os.TempDir(), fmt.Sprintf("%d-%s%s", now, r, ext))
 }
 
-func (m *MiddleWare) makeAdminPost(hdr *multipart.FileHeader) (p *model.Post, err error) {
+func (m *MiddleWare) makePost(hdr *multipart.FileHeader) (p *model.Post, err error) {
 	h := sha256.New()
 	ext := filepath.Ext(hdr.Filename)
 	tmpfile := mktmp(ext)
@@ -157,6 +167,22 @@ func (m *MiddleWare) SetupRoutes() {
 
 	m.router.StaticFS("/files", http.Dir(m.Api.Storage.GetRoot()))
 
+	m.router.GET("/bitchan/v1/threads.json", func(c *gin.Context) {
+		limit_str := c.DefaultQuery("limit", "10")
+		limit, _ := strconv.Atoi(limit_str)
+		if limit <= 0 {
+			limit = 1
+		}
+		if limit > 10 {
+			limit = 10
+		}
+		posts, err := m.db.GetThreads(limit)
+		c.JSON(http.StatusOK, gin.H{
+			"posts": posts,
+			"error": err,
+		})
+	})
+
 	m.router.GET("/bitchan/v1/admin/add-peer", func(c *gin.Context) {
 		rhost, _, err := net.SplitHostPort(c.Request.RemoteAddr)
 		rip := net.ParseIP(rhost)
@@ -182,20 +208,14 @@ func (m *MiddleWare) SetupRoutes() {
 		}
 	})
 
-	m.router.POST("/bitchan/v1/admin/post", func(c *gin.Context) {
-		rhost, _, _ := net.SplitHostPort(c.Request.RemoteAddr)
-		rip := net.ParseIP(rhost)
-		if !rip.IsLoopback() {
-			// deny
-			c.String(http.StatusForbidden, "nah")
-			return
-		}
+	m.router.POST("/bitchan/v1/post", func(c *gin.Context) {
+
 		f, err := c.FormFile("file")
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 			return
 		}
-		p, err := m.makeAdminPost(f)
+		p, err := m.makePost(f)
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 			return

@@ -98,6 +98,9 @@ func (g *httpGossiper) AddNeighboor(n *url.URL) bool {
 			return false
 		}
 		g.neighboors.Store(n.Host, newHttpFeed(n, pk))
+		log.WithFields(logrus.Fields{
+			"host": n.Host,
+		}).Info("added neighboor")
 		return true
 	}
 }

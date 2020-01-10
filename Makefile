@@ -1,22 +1,19 @@
 REPO := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
-BITCHAN_JS := $(REPO)/webroot/static/bitchan.min.js
+BITCHAN_WASM := $(REPO)/webroot/static/bitchan.wasm
+WASM_EXEC_JS := $(REPO)/webroot/static/wasm_exec.min.js
+GOROOT = $(shell go env GOROOT)
 
-NMODS := $(REPO)/node_modules
+all: mistake
 
-NPM := yarn
+mistake: $(BITCHAN_WASM)
 
-all: repent mistake
+$(BITCHAN_WASM):
+	GOOS=js GOARCH=wasm go build -o '$(BITCHAN_WASM)' github.com/majestrate/bitchan/js
+	cp '$(GOROOT)/misc/wasm/wasm_exec.js' '$(WASM_EXEC_JS)'
 
-mistake: $(BITCHAN_JS)
+clean: repent
 
-$(BITCHAN_JS):
-	$(NPM) install
-	$(NPM) run the-web-was-a-mistake
-
-clean:
-	$(NPM) run nuke-from-orbit
+repent:
+	rm -f '$(BITCHAN_WASM)' '$(WASM_EXEC_JS)'
 	go clean -a
-
-repent: clean
-	rm -rf '$(NMODS)'
