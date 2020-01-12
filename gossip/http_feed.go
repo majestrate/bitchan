@@ -8,6 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/zeebo/bencode"
 	"io"
+	"lukechampine.com/blake3"
 	"net/http"
 	"net/url"
 )
@@ -39,8 +40,8 @@ func newDecoder(r io.Reader) *bencode.Decoder {
 	return dec
 }
 
-func (f *HttpFeed) verifySig(body *bytes.Buffer, sig []byte) bool {
-	return ed25519.Verify(f.pk, body.Bytes(), sig)
+func (f *HttpFeed) verifySig(digest, sig []byte) bool {
+	return ed25519.Verify(f.pk, digest, sig)
 }
 
 func encodeKey(pk ed25519.PublicKey) string {
@@ -72,27 +73,12 @@ func doPost(remoteURL string, obj interface{}) error {
 	return nil
 }
 
-func (f *HttpFeed) FetchNeighboors() *model.PeerList {
-	var list model.PeerList
-	remoteURL := f.u.String()
+func (f *HttpFeed) fetchVerified(remoteURL string, decode func(io.Reader) (interface{}, error)) (interface{}, error) {
 	resp, err := http.Get(remoteURL)
 	if err != nil {
-		log.WithFields(logrus.Fields{
-			"url":   remoteURL,
-			"error": err,
-		}).Error("failed to http get")
-		return nil
+		return nil, err
 	}
-	contentType := resp.Header.Get("Content-Type")
-	if contentType != HttpFeedMimeType {
-
-		log.WithFields(logrus.Fields{
-			"url":          remoteURL,
-			"content-type": contentType,
-		}).Error("bad content type")
-		return nil
-	}
-	val := resp.Header.Get("X-Bitchan-Ed25519-Signature")
+	val := resp.Header.Get("X-Bitchan-Ed25519-B3-Signature")
 	sig, err := base64.StdEncoding.DecodeString(val)
 	if err != nil {
 		log.WithFields(logrus.Fields{
@@ -100,30 +86,42 @@ func (f *HttpFeed) FetchNeighboors() *model.PeerList {
 			"error":  err,
 			"header": val,
 		}).Error("failed to decode signature header")
-		return nil
+		return nil, err
 	}
 	defer resp.Body.Close()
-	buf := new(bytes.Buffer)
-	r := io.TeeReader(resp.Body, buf)
-	dec := newDecoder(r)
-	err = dec.Decode(&list)
+	h := blake3.New(32, nil)
+	r := io.TeeReader(resp.Body, h)
+	val_i, err := decode(r)
 	if err != nil {
 		log.WithFields(logrus.Fields{
 			"url":   remoteURL,
 			"error": err,
 		}).Error("decode failed")
-		return nil
+		return nil, err
 	}
-	if f.verifySig(buf, sig) {
-		return &list
+	digest := h.Sum(nil)
+	if f.verifySig(digest, sig) {
+		return val_i, err
 	}
 	log.WithFields(logrus.Fields{
 		"url": remoteURL,
 		"sig": val,
 		"pk":  encodeKey(f.pk),
 	}).Error("signature verify failed")
-	return nil
+	return nil, err
+}
 
+func (f *HttpFeed) FetchNeighboors() *model.PeerList {
+	val, err := f.fetchVerified(f.u.String(), func(r io.Reader) (interface{}, error) {
+		list := new(model.PeerList)
+		dec := newDecoder(r)
+		err := dec.Decode(list)
+		return list, err
+	})
+	if err != nil {
+		return nil
+	}
+	return val.(*model.PeerList)
 }
 
 func (f *HttpFeed) Publish(p *model.Post) {

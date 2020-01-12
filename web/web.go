@@ -15,6 +15,7 @@ import (
 	"github.com/zeebo/bencode"
 	"io"
 	"io/ioutil"
+	"lukechampine.com/blake3"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -153,7 +154,9 @@ func (m *MiddleWare) SetupRoutes() {
 
 	// sendresult sends signed result
 	sendResult := func(c *gin.Context, buf *bytes.Buffer, ct string) {
-		sig := ed25519.Sign(m.privkey, buf.Bytes())
+		h := blake3.New(32, nil)
+		io.Copy(h, buf)
+		sig := ed25519.Sign(m.privkey, h.Sum(nil))
 		c.Header("X-Bitchan-Ed25519-Signature", encodeSig(sig))
 		c.Header("Content-Type", ct)
 		c.String(http.StatusOK, buf.String())

@@ -1,9 +1,9 @@
 package model
 
 import (
-	"bytes"
 	"crypto/ed25519"
 	"github.com/zeebo/bencode"
+	"lukechampine.com/blake3"
 )
 
 type Post struct {
@@ -14,28 +14,29 @@ type Post struct {
 	Signature   string `bencode:"z",omit-empty`
 }
 
-func (p *Post) encode() []byte {
-	buf := new(bytes.Buffer)
-	enc := bencode.NewEncoder(buf)
+func (p *Post) hashme() []byte {
+	h := blake3.New(32, nil)
+	enc := bencode.NewEncoder(h)
 	enc.Encode(p)
-	return buf.Bytes()
+	return h.Sum(nil)
 }
 
 func (p *Post) Verify() bool {
 	sig := []byte(p.Signature)
 	p.Signature = ""
-	msg := p.encode()
+	digest := p.hashme()
 	k := ed25519.PublicKey([]byte(p.PubKey))
 	if len(k) == 0 {
 		return false
 	}
-	return ed25519.Verify(k, msg, sig)
+	return ed25519.Verify(k, digest, sig)
 }
 
 func (p *Post) Sign(sk ed25519.PrivateKey) {
 	p.PubKey = string(sk.Public().(ed25519.PublicKey)[:])
-	msg := p.encode()
-	p.Signature = string(ed25519.Sign(sk, msg))
+	p.Signature = ""
+	digest := p.hashme()
+	p.Signature = string(ed25519.Sign(sk, digest))
 }
 
 type PostResponse struct {
