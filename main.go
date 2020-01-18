@@ -84,6 +84,11 @@ func main() {
 		}
 		s.ListenAndServe()
 	}()
+	go func() {
+		for _, torrent := range h.Api.Storage.GetAllTorrents() {
+			h.Api.Torrent.Client.AddTorrentFromFile(torrent)
+		}
+	}()
 	signals.Wait()
 	log.Infof("Saving peers...")
 	var list model.PeerList

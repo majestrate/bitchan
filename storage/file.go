@@ -2,6 +2,7 @@ package storage
 
 import (
 	"os"
+	"path/filepath"
 )
 
 type fileStorage struct {
@@ -15,6 +16,14 @@ func (f *fileStorage) SetRoot(path string) {
 
 func (f *fileStorage) GetRoot() string {
 	return f.RootDir
+}
+
+func (f *fileStorage) GetAllTorrents() []string {
+	matches, err := filepath.Glob(filepath.Join(f.RootDir, "*.torrent"))
+	if err != nil {
+		return []string{}
+	}
+	return matches
 }
 
 func newFileStore() *fileStorage {
