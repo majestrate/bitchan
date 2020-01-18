@@ -145,7 +145,7 @@ func (m *MiddleWare) makePost(hdr *multipart.FileHeader, text string) (p *model.
 		return nil, err
 	}
 
-	torrentFile := fname + ".torrent"
+	torrentFile := real_fname + ".torrent"
 	torrent_txt := ""
 	real_txt := ""
 	if len(text) > 0 {
