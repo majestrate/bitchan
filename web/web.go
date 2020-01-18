@@ -131,12 +131,12 @@ func (m *MiddleWare) makePost(hdr *multipart.FileHeader, text string) (p *model.
 	fname := filehash + ext
 	real_rootf := filepath.Join(m.Api.Storage.GetRoot(), filehash)
 	real_fname := filepath.Join(real_rootf, fname)
-	os.Mkdir(real_rootf, os.FileMode(0400))
+	os.Mkdir(real_rootf, os.FileMode(0700))
 
 	tmpdir := mktmp(os.TempDir(), "")
-	os.Mkdir(tmpdir, os.FileMode(0400))
+	os.Mkdir(tmpdir, os.FileMode(0700))
 	torrent_rootf := filepath.Join(tmpdir, filehash)
-	os.Mkdir(torrent_rootf, os.FileMode(0400))
+	os.Mkdir(torrent_rootf, os.FileMode(0700))
 	torrent_fname := filepath.Join(torrent_rootf, fname)
 
 	err = os.Rename(tmpfile, torrent_fname)
