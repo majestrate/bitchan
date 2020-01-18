@@ -188,7 +188,9 @@ func (m *MiddleWare) makePost(hdr *multipart.FileHeader, text string) (p *model.
 func (m *MiddleWare) torrentURL(t *torrent.Torrent) string {
 	i := t.Info()
 	f := i.UpvertedFiles()
-	return m.makeFilesURL(f[0].DisplayPath(i))
+	n := f[0].DisplayPath(i)
+	idx := strings.LastIndex(n, ".")
+	return m.makeFilesURL(n[0:idx])
 }
 
 func (m *MiddleWare) SetupRoutes() {
