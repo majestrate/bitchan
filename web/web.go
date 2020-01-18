@@ -97,18 +97,19 @@ func (m *MiddleWare) makeFilesURL(fname string) string {
 	return "http://" + net.JoinHostPort(m.hostname, m.port) + "/files/" + filepath.Base(fname)
 }
 
-func mktmp(ext string) string {
+func mktmp(root, ext string) string {
 	now := time.Now().UnixNano()
 	var b [4]byte
 	rand.Read(b[:])
 	r := strings.Trim(base64.URLEncoding.EncodeToString(b[:]), "=")
-	return filepath.Join(os.TempDir(), fmt.Sprintf("%d-%s%s", now, r, ext))
+	return filepath.Join(root, fmt.Sprintf("%d-%s%s", now, r, ext))
 }
 
-func (m *MiddleWare) makePost(hdr *multipart.FileHeader) (p *model.Post, err error) {
+func (m *MiddleWare) makePost(hdr *multipart.FileHeader, text string) (p *model.Post, err error) {
+
 	h := sha256.New()
 	ext := filepath.Ext(hdr.Filename)
-	tmpfile := mktmp(ext)
+	tmpfile := mktmp(os.TempDir(), ext)
 	inf, err := hdr.Open()
 	if err != nil {
 		return nil, err
@@ -126,16 +127,48 @@ func (m *MiddleWare) makePost(hdr *multipart.FileHeader) (p *model.Post, err err
 		return nil, err
 	}
 	d := h.Sum(nil)
-	fname := base64.URLEncoding.EncodeToString(d[:]) + ext
-	fname = filepath.Join(m.Api.Storage.GetRoot(), fname)
-	err = os.Rename(tmpfile, fname)
+	filehash := base64.URLEncoding.EncodeToString(d[:])
+	fname := filehash + ext
+	real_rootf := filepath.Join(m.Api.Storage.GetRoot(), filehash)
+	real_fname := filepath.Join(real_rootf, fname)
+	os.Mkdir(real_rootf, os.FileMode(0400))
+
+	tmpdir := mktmp(os.TempDir(), "")
+	os.Mkdir(tmpdir, os.FileMode(0400))
+	torrent_rootf := filepath.Join(tmpdir, filehash)
+	os.Mkdir(torrent_rootf, os.FileMode(0400))
+	torrent_fname := filepath.Join(torrent_rootf, fname)
+
+	err = os.Rename(tmpfile, torrent_fname)
 	if err != nil {
 		os.Remove(tmpfile)
 		return nil, err
 	}
+
 	torrentFile := fname + ".torrent"
-	err = m.Api.MakeTorrent(fname, torrentFile)
+	torrent_txt := ""
+	real_txt := ""
+	if len(text) > 0 {
+		text_fname := fmt.Sprintf("%s-%d.txt", m.hostname, time.Now().UnixNano())
+		torrent_txt = filepath.Join(torrent_rootf, text_fname)
+		real_txt = filepath.Join(real_rootf, text_fname)
+		err = ioutil.WriteFile(torrent_txt, []byte(text), os.FileMode(0400))
+	}
+	if err == nil {
+		err = m.Api.MakeTorrent(torrent_rootf, torrentFile)
+		if err == nil {
+			_, err = os.Stat(real_fname)
+			if os.IsNotExist(err) {
+				err = os.Rename(torrent_fname, real_fname)
+			}
+			if real_txt != "" && torrent_txt != "" {
+				os.Rename(torrent_txt, real_txt)
+			}
+		}
+	}
 	if err != nil {
+		os.RemoveAll(tmpdir)
+		os.Remove(tmpfile)
 		os.Remove(fname)
 		os.Remove(torrentFile)
 		return nil, err
@@ -220,7 +253,10 @@ func (m *MiddleWare) SetupRoutes() {
 			c.String(http.StatusInternalServerError, err.Error())
 			return
 		}
-		p, err := m.makePost(f)
+
+		text := c.DefaultPostForm("comment", "")
+
+		p, err := m.makePost(f, text)
 		if err != nil {
 			c.String(http.StatusInternalServerError, err.Error())
 			return

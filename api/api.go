@@ -20,12 +20,12 @@ func (a *ApiServer) Stop() {
 	a.Gossip.Stop()
 }
 
-func (a *ApiServer) MakeTorrent(inf, outf string) error {
+func (a *ApiServer) MakeTorrent(rootf, outf string) error {
 	var mi metainfo.MetaInfo
 	mi.Announce = "udp://opentracker.i2p.rocks:6969/announce"
 	var miInfo metainfo.Info
 	miInfo.PieceLength = 128 * 1024
-	err := miInfo.BuildFromFilePath(inf)
+	err := miInfo.BuildFromFilePath(rootf)
 	if err != nil {
 		return err
 	}
