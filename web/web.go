@@ -129,8 +129,8 @@ func (m *MiddleWare) makePost(hdr *multipart.FileHeader, text string) (p *model.
 		return nil, err
 	}
 	d := h.Sum(nil)
-	filehash := base64.URLEncoding.EncodeToString(d[:])
-	fname := "__" + filehash + ext
+	filehash := "__" + base64.URLEncoding.EncodeToString(d[:])
+	fname := filehash + ext
 	real_rootf := filepath.Join(m.Api.Storage.GetRoot(), filehash)
 	real_fname := filepath.Join(real_rootf, fname)
 	os.Mkdir(real_rootf, os.FileMode(0700))
