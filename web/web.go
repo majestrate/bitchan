@@ -152,7 +152,7 @@ func (m *MiddleWare) makePost(hdr *multipart.FileHeader, text string) (p *model.
 		text_fname := fmt.Sprintf("%s-%d.txt", m.hostname, time.Now().UnixNano())
 		torrent_txt = filepath.Join(torrent_rootf, text_fname)
 		real_txt = filepath.Join(real_rootf, text_fname)
-		err = ioutil.WriteFile(torrent_txt, []byte(text), os.FileMode(0400))
+		err = ioutil.WriteFile(torrent_txt, []byte(text), os.FileMode(0700))
 	}
 	if err == nil {
 		err = m.Api.MakeTorrent(torrent_rootf, torrentFile)
