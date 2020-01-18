@@ -8,6 +8,9 @@ import (
 	"github.com/majestrate/bitchan/storage"
 	"github.com/sirupsen/logrus"
 	"net/http"
+	"net/url"
+	"os"
+	"path/filepath"
 )
 
 var log = logrus.New()
@@ -61,6 +64,12 @@ func (g *Grabber) Grab(metainfoURL string) error {
 	log.WithFields(logrus.Fields{
 		"url": metainfoURL,
 	}).Info("download starting")
+	u, _ := url.Parse(metainfoURL)
+	f, err := os.Create(filepath.Join(g.store.GetRoot(), filepath.Base(u.Path)))
+	if err == nil {
+		defer f.Close()
+		mi.Write(f)
+	}
 	t.DownloadAll()
 	return nil
 }
