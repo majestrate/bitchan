@@ -36,6 +36,8 @@
       fetch('/bitchan/v1/posts.json')
   .then(response => response.json())
   .then(data => {
+    if(data['posts']) 
+    {
     for(post of data['posts'])
     {
       let e = document.createElement("div");
@@ -44,6 +46,7 @@
       a.innerText = post;
       e.appendChild(a);
       root.appendChild(e);
+    }
     }
   })
   .catch(error => console.error(error))
