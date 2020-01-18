@@ -179,6 +179,7 @@ func (m *MiddleWare) makePost(hdr *multipart.FileHeader, text string) (p *model.
 		PostedAt:    now,
 	}
 	p.Sign(m.privkey)
+	go m.Api.Torrent.Grab(p.MetaInfoURL)
 	return p, nil
 }
 

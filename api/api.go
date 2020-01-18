@@ -38,11 +38,6 @@ func (a *ApiServer) MakeTorrent(rootf, outf string) error {
 		return err
 	}
 	defer f.Close()
-	t, err := a.Torrent.Client.AddTorrent(&mi)
-	if err != nil {
-		return err
-	}
-	t.VerifyData()
 	return mi.Write(f)
 }
 
