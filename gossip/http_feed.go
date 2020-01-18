@@ -121,6 +121,9 @@ func (f *HttpFeed) FetchNeighboors() *model.PeerList {
 	if err != nil {
 		return nil
 	}
+	if val == nil {
+		return nil
+	}
 	return val.(*model.PeerList)
 }
 

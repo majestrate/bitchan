@@ -191,7 +191,7 @@ func (m *MiddleWare) SetupRoutes() {
 		str := buf.String()
 		io.Copy(h, buf)
 		sig := ed25519.Sign(m.privkey, h.Sum(nil))
-		c.Header("X-Bitchan-Ed25519-Signature", encodeSig(sig))
+		c.Header("X-Bitchan-Ed25519-B3-Signature", encodeSig(sig))
 		c.Header("Content-Type", ct)
 		c.String(http.StatusOK, str)
 	}
