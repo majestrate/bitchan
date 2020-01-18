@@ -20,6 +20,14 @@ type Grabber struct {
 	store    storage.Store
 }
 
+func (g *Grabber) ForEachSeed(visit func(*torrent.Torrent)) {
+	for _, t := range g.Client.Torrents() {
+		if t.Seeding() {
+			visit(t)
+		}
+	}
+}
+
 func (g *Grabber) Grab(metainfoURL string) error {
 	log.WithFields(logrus.Fields{
 		"url": metainfoURL,

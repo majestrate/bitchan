@@ -7,6 +7,8 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"github.com/anacrolix/torrent"
+	"github.com/anacrolix/torrent/metainfo"
 	"github.com/gin-gonic/gin"
 	"github.com/majestrate/bitchan/api"
 	"github.com/majestrate/bitchan/db"
@@ -183,6 +185,12 @@ func (m *MiddleWare) makePost(hdr *multipart.FileHeader, text string) (p *model.
 	return p, nil
 }
 
+func (m *MiddleWare) torrentURL(t *torrent.Torrent) string {
+	i := t.Info()
+	f := i.UpvertedFiles()
+	return m.makeFilesURL(f[0].DisplayPath(i))
+}
+
 func (m *MiddleWare) SetupRoutes() {
 	m.router.LoadHTMLGlob("templates/**/*")
 
@@ -207,7 +215,7 @@ func (m *MiddleWare) SetupRoutes() {
 
 	m.router.StaticFS("/files", http.Dir(m.Api.Storage.GetRoot()))
 
-	m.router.GET("/bitchan/v1/threads.json", func(c *gin.Context) {
+	m.router.GET("/bitchan/v1/posts.json", func(c *gin.Context) {
 		limit_str := c.DefaultQuery("limit", "10")
 		limit, _ := strconv.Atoi(limit_str)
 		if limit <= 0 {
@@ -216,11 +224,28 @@ func (m *MiddleWare) SetupRoutes() {
 		if limit > 10 {
 			limit = 10
 		}
-		posts, err := m.DB.GetThreads(limit)
+		var posts []string
+		m.Api.Torrent.ForEachSeed(func(t *torrent.Torrent) {
+			posts = append(posts, t.InfoHash().HexString())
+		})
 		c.JSON(http.StatusOK, gin.H{
 			"posts": posts,
-			"error": err,
 		})
+	})
+
+	m.router.GET("/bitchan/v1/post", func(c *gin.Context) {
+		infohash := c.DefaultQuery("infohash_hex", "")
+		if infohash == "" {
+			c.String(http.StatusNotFound, "not found")
+			return
+		}
+		h := metainfo.NewHashFromHex(infohash[:])
+		t, ok := m.Api.Torrent.Client.Torrent(h)
+		if !ok {
+			c.String(http.StatusNotFound, "not found")
+			return
+		}
+		c.Redirect(http.StatusFound, m.torrentURL(t))
 	})
 
 	m.router.GET("/bitchan/v1/admin/add-peer", func(c *gin.Context) {
