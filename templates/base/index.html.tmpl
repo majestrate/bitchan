@@ -7,10 +7,11 @@
     <link rel="stylesheet" href="/static/override.css" />
     <link rel="icon" href="/static/favicon.png" />
     <meta charset="utf-8" />
-    <script type="text/javascript" src="/static/wasm_exec.min.js">
+    <!-- <script type="text/javascript" src="/static/wasm_exec.min.js"> -->
     </script>
   </head>
   <body>
+    <!--
     <noscript>
       yes this requires js. no it won't work without it. yes i hate it too, the web was a mistake.
     </noscript>
@@ -20,6 +21,13 @@
         go.run(result.instance);
       });
     </script>
+    -->
+    <form method="post" action="/bitchan/v1/post" >
+      <input type="file" name="file" />
+      <textarea name="comment">
+      </textarea>
+      <input type="submit" value="post" />
+    </form>
   </body>
 </html>
 {{ end }}
