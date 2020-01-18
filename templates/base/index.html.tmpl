@@ -8,6 +8,7 @@
     <link rel="icon" href="/static/favicon.png" />
     <meta charset="utf-8" />
     <!-- <script type="text/javascript" src="/static/wasm_exec.min.js"> -->
+      <script  type="text/javascript" src="/static/bitchan_post.js" />
     </script>
   </head>
   <body>
@@ -28,6 +29,25 @@
       </textarea>
       <input type="submit" value="post" />
     </form>
+    <div id="posts">
+    </div>
+    <script>
+      let root = document.getElementById("posts");
+      fetch('/bitchan/v1/posts.json')
+  .then(response => response.json())
+  .then(data => {
+    for(post of data['posts'])
+    {
+      let e = document.createElement("div");
+      let a = document.createElement("a");
+      a.href = "/bitchan/v1/post?infohash_hex="+post;
+      a.innerText = post;
+      e.appendChild(a);
+      root.appendChild(e);
+    }
+  })
+  .catch(error => console.error(error))
+    </script>
   </body>
 </html>
 {{ end }}
