@@ -57,7 +57,7 @@ func main() {
 	}
 	h.Api.Storage = storage.NewStorage()
 	h.Api.Storage.SetRoot("file_storage")
-	h.Api.Gossip = gossip.NewServer()
+	h.Api.Gossip = gossip.NewServer(host)
 	h.Api.Torrent = torrent.NewGrabber(h.Api.Storage, h.Api.Gossip)
 
 	s := &http.Server{

@@ -13,6 +13,6 @@ type Gossiper interface {
 	ForEachPeer(func(model.Peer))
 }
 
-func NewServer() Gossiper {
-	return newHttpGossiper()
+func NewServer(hostname string) Gossiper {
+	return newHttpGossiper(hostname)
 }

@@ -43,7 +43,7 @@ func (m *MiddleWare) AddPeerList(l model.PeerList) {
 	for _, peer := range l.Peers {
 		u, _ := url.Parse(peer.URL)
 		if u != nil {
-			m.Api.Gossip.AddNeighboor(u)
+			go m.Api.Gossip.AddNeighboor(u)
 		}
 	}
 }

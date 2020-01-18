@@ -13,6 +13,7 @@ import (
 
 type httpGossiper struct {
 	neighboors sync.Map
+	hostname   string
 }
 
 func (g *httpGossiper) forEachFeed(visit func(*HttpFeed)) {
@@ -56,8 +57,10 @@ func (g *httpGossiper) Bootstrap() {
 	})
 }
 
-func newHttpGossiper() *httpGossiper {
-	return new(httpGossiper)
+func newHttpGossiper(hostname string) *httpGossiper {
+	return &httpGossiper{
+		hostname: hostname,
+	}
 }
 
 func (g *httpGossiper) BroadcastLocalPost(p *model.Post) {
@@ -98,9 +101,14 @@ func (g *httpGossiper) AddNeighboor(n *url.URL) bool {
 			return false
 		}
 		g.neighboors.Store(n.Host, newHttpFeed(n, pk))
-		log.WithFields(logrus.Fields{
-			"host": n.Host,
-		}).Info("added neighboor")
+		addme, _ := url.Parse(n.String())
+		addme.Path = "/bitchan/v1/peer?host=" + g.hostname
+		_, err = http.Get(addme.String())
+		if err == nil {
+			log.WithFields(logrus.Fields{
+				"host": n.Host,
+			}).Info("added neighboor")
+		}
 		return true
 	}
 }
