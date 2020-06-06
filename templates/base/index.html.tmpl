@@ -66,8 +66,10 @@
                     e.children[0].remove();
                 }
               };
-              span.setAttribute("class", "link");
-              span.appendChild(document.createTextNode(word));
+              let text_elem = document.createElement("span");
+              text_elem.setAttribute("class", "link");
+              text_elem.appendChild(document.createTextNode(word));
+              span.appendChild(text_elem);
               elem.appendChild(span);
             }
             else
