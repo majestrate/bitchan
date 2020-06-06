@@ -42,14 +42,13 @@
         const words = elem.innerHTML.split(/(\s)/);
         for(let word of words)
         {
-          console.log(word);
           if(wordIsInfoHash(word))
           {
             newwords += '<span class="link" onclick=preview_post("'+word+'")>' + word + '</span>';
           }
           else
           {
-            newwords += word + " ";
+            newwords += word;
           }
         }
         elem.innerHTML = newwords;
