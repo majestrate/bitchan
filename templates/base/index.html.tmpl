@@ -111,6 +111,7 @@
                   var elem = document.createElement("pre");
                   elem.setAttribute("class", "citable_text");
                   elem.appendChild(txt_elem);
+                  injectCites(elem);
                   e.appendChild(elem);
                 });
               }
@@ -141,9 +142,6 @@
             }
           });
       }
-      let elems = document.getElementsByClassName("citable_text");
-      for(elem of elems)
-        injectCites(elem);
     }
   })
   .catch(error => console.error(error))
