@@ -71,7 +71,7 @@
         let e = document.createElement("div");
         let a = document.createElement("a");
         a.href = "/bitchan/v1/post?infohash_hex="+post.infohash_hex;
-        a.innerText = post.name;
+        a.innerText = "[link]";
         e.appendChild(a);
         fetch("/bitchan/v1/files.json?infohash_hex="+post.infohash_hex).then(response => response.json()).
           then(data => {
@@ -90,16 +90,19 @@
               {
                 let img_elem = document.createElement("img");
                 img_elem.src = file;
+                img_elem.style = "max-width: 500px;";
                 e.appendChild(img_elem);
               }
               if(fileIsVideo(file))
               {
                 let vid_elem = document.createElement("video");
                 vid_elem.src = file;
+                vid_elem.style = "max-width: 500px;";
                 e.appendChild(vid_elem);                
               }
             }
             root.appendChild(e);
+            root.appendChild(document.createElement("hr"));
           });
       }
     }

@@ -336,7 +336,7 @@ func (m *MiddleWare) SetupRoutes() {
 			return
 		}
 		m.Api.Gossip.BroadcastLocalPost(p)
-		responseType := c.DefaultQuery("t", "plain")
+		responseType := c.DefaultQuery("t", "")
 		if responseType == "plain" {
 			c.Redirect(http.StatusFound, "/bitchan/v1/post?infohash_hex="+p.MetaInfoHash)
 			return
@@ -345,7 +345,7 @@ func (m *MiddleWare) SetupRoutes() {
 			c.JSON(http.StatusCreated, p.ToInfo())
 			return
 		}
-		c.String(http.StatusCreated, "posted")
+		c.Redirect(http.StatusFound, "/")
 	})
 
 	m.router.GET("/bitchan/v1/admin/bootstrap", func(c *gin.Context) {
