@@ -22,7 +22,7 @@ initial build:
 
 running:
 
-    $ bitchan your.domain.tld
+    $ ./bitchand your.domain.tld
     
 uses port 8800 by default
 
