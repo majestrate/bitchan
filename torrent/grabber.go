@@ -70,7 +70,18 @@ func (g *Grabber) Grab(metainfoURL string) error {
 		defer f.Close()
 		mi.Write(f)
 	}
-	t.DownloadAll()
+	if t.Seeding() {
+		log.WithFeilds(logrus.Fields{
+			"url": metaInfoURL,
+			"infohash": t.InfoHash().HexString(),
+		}).Info("seeding")
+	}else {
+		log.WithFeilds(logrus.Fields{
+			"url": metaInfoURL,
+			"infohash": t.InfoHash().HexString(),
+		}).Info("downloading")
+		t.DownloadAll()
+	}
 	return nil
 }
 
