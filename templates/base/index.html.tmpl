@@ -33,6 +33,33 @@
     <div id="posts">
     </div>
     <script>
+      const fileIsKind = (file, kinds) => {
+        const f = file.toLowerCase();
+        for(t of kinds)
+        {
+          if(f.endsWith("."+t))
+            return true;
+        }
+        return false;
+      };
+      const fileIsVideo = (file) => {
+        return fileIsKind(file, ["mp4", "m4v", "ogv", "webm"]);
+      };
+      const fileIsImage = (file) => {
+        return fileIsKind(file, ["png", "gif", "jpeg", "jpg", "webp"]);
+      };
+      const fileIsAudio = (file) => {
+        return fileIsKind(file, ["mp3", "oga", "opus"]);
+      };
+      const allowEmbedFile = (file) => {
+        if(fileIsImage(file))
+          return true;
+        if(fileIsVideo(file))
+          return true;
+        if(fileIsAudio(file))
+          return true;
+        return false;
+      };
       let root = document.getElementById("posts");
       fetch('/bitchan/v1/posts.json')
   .then(response => response.json())
@@ -43,10 +70,37 @@
       {
         let e = document.createElement("div");
         let a = document.createElement("a");
-        a.href = "/bitchan/v1/post?infohash_hex="+post.info_hash;
+        a.href = "/bitchan/v1/post?infohash_hex="+post.infohash_hex;
         a.innerText = post.name;
         e.appendChild(a);
-        root.appendChild(e);
+        fetch("/bitchan/v1/files.json?infohash_hex="+post.infohash_hex).then(response => response.json()).
+          then(data => {
+            for(file of data['files'])
+            {
+              if(fileIsKind(file, ["txt"]))
+              {
+                fetch(file).then(response => response.text()).then(data => {
+                  var txt_elem = document.createTextNode(data);
+                  e.appendChild(txt_elem);
+                });
+              }
+              if(!allowEmbedFile(file))
+                continue;
+              if(fileIsImage(file))
+              {
+                let img_elem = document.createElement("img");
+                img_elem.src = file;
+                e.appendChild(img_elem);
+              }
+              if(fileIsVideo(file))
+              {
+                let vid_elem = document.createElement("video");
+                vid_elem.src = file;
+                e.appendChild(vid_elem);                
+              }
+            }
+            root.appendChild(e);
+          });
       }
     }
   })

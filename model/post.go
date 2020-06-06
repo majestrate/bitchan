@@ -7,16 +7,23 @@ import (
 )
 
 type PostInfo struct {
-	InfoHash string `json:"info_hash"`
-	Name string `json:"name"`
+	InfoHash string `json:"infohash_hex"`
+	Name string `json:"name",omit-empty`
 }
 
 type Post struct {
 	MetaInfoURL string `bencode:"bitchan-metainfo-url"`
+	MetaInfoHash string `bencode:"bitchan-infohash-hex",omit-empty`
 	Version     string `bencode:"bitchan-version",omit-empty`
 	PostedAt    int64  `bencode:"bitchan-posted-at"`
 	PubKey      string `bencode:"bitchan-poster-pubkey"`
 	Signature   string `bencode:"z",omit-empty`
+}
+
+func (p *Post) ToInfo() PostInfo {
+	return PostInfo{
+		InfoHash: p.MetaInfoHash,
+	}
 }
 
 func (p *Post) hashme() []byte {

@@ -20,25 +20,26 @@ func (a *ApiServer) Stop() {
 	a.Gossip.Stop()
 }
 
-func (a *ApiServer) MakeTorrent(rootf, outf string) error {
+func (a *ApiServer) MakeTorrent(rootf, outf string) (string, error) {
 	var mi metainfo.MetaInfo
 	mi.Announce = "udp://opentracker.i2p.rocks:6969/announce"
 	var miInfo metainfo.Info
 	miInfo.PieceLength = 128 * 1024
 	err := miInfo.BuildFromFilePath(rootf)
 	if err != nil {
-		return err
+		return "", err
 	}
 	mi.InfoBytes, err = bencode.Marshal(miInfo)
 	if err != nil {
-		return err
+		return "", err
 	}
 	f, err := os.Create(outf)
 	if err != nil {
-		return err
+		return "", err
 	}
+	infohash_hex := mi.HashInfoBytes().HexString()
 	defer f.Close()
-	return mi.Write(f)
+	return infohash_hex, mi.Write(f)
 }
 
 func NewAPI() *ApiServer {

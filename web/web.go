@@ -102,11 +102,15 @@ func (m *MiddleWare) renderDirJSON(dirname string, ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, map[string]interface{}{"error": err.Error()})
 		return
 	}
-	files, err := f.Readdirnames(0)
+	fileInfos, err := f.Readdir(0)
 	f.Close()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, map[string]interface{}{"error": err.Error()})
 		return
+	}
+	var files []string
+	for _, info := range fileInfos {
+		files = append(files, "/files/" + filepath.Base(dirname) + "/" + info.Name())
 	}
 	ctx.JSON(http.StatusOK, map[string]interface{}{"files": files})
 }
@@ -172,8 +176,9 @@ func (m *MiddleWare) makePost(hdr *multipart.FileHeader, text string) (p *model.
 		real_txt = filepath.Join(real_rootf, text_fname)
 		err = ioutil.WriteFile(torrent_txt, []byte(text), os.FileMode(0700))
 	}
+	var infohash_hex string
 	if err == nil {
-		err = m.Api.MakeTorrent(torrent_rootf, torrentFile)
+		infohash_hex, err = m.Api.MakeTorrent(torrent_rootf, torrentFile)
 		if err == nil {
 			_, err = os.Stat(real_fname)
 			if os.IsNotExist(err) {
@@ -195,6 +200,7 @@ func (m *MiddleWare) makePost(hdr *multipart.FileHeader, text string) (p *model.
 	p = &model.Post{
 		MetaInfoURL: m.makeFilesURL(torrentFile),
 		PostedAt:    now,
+		MetaInfoHash: infohash_hex,
 	}
 	p.Sign(m.privkey)
 	go m.Api.Torrent.Grab(p.MetaInfoURL)
@@ -233,17 +239,18 @@ func (m *MiddleWare) SetupRoutes() {
 
 	m.router.GET("/bitchan/v1/files.json", func(c *gin.Context) {
 		path := c.DefaultQuery("name", "")
-		name := filepath.Clean(path)
-		if len(name) == 0 {
-			infohash_hex := c.DefaultQuery("info_hash", "")
+		if len(path) == 0 {
+			infohash_hex := c.DefaultQuery("infohash_hex", "")
 			h := metainfo.NewHashFromHex(infohash_hex[:])
 			t, ok := m.Api.Torrent.Client.Torrent(h)
 			if ! ok {
 				c.JSON(http.StatusNotFound, map[string]interface{}{"error": "not found"})
 				return
 			}
-			name = t.Name()
+			path = t.Name()
+			
 		}
+		name := filepath.Clean(path)
 		if len(name) == 0 || name == "." {
 			c.JSON(http.StatusNotFound, map[string]interface{}{"error": "no name or infohash provided"})
 			return
@@ -329,6 +336,15 @@ func (m *MiddleWare) SetupRoutes() {
 			return
 		}
 		m.Api.Gossip.BroadcastLocalPost(p)
+		responseType := c.DefaultQuery("t", "plain")
+		if responseType == "plain" {
+			c.Redirect(http.StatusFound, "/bitchan/v1/post?infohash_hex="+p.MetaInfoHash)
+			return
+		}
+		if responseType == "json" {
+			c.JSON(http.StatusCreated, p.ToInfo())
+			return
+		}
 		c.String(http.StatusCreated, "posted")
 	})
 

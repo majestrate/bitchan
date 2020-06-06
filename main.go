@@ -33,6 +33,9 @@ func main() {
 		host, err = network.LookupSelf()
 	} else {
 		host = os.Args[1]
+		if len(os.Args) > 2 {
+
+		}
 	}
 	if err != nil {
 		log.WithFields(logrus.Fields{
