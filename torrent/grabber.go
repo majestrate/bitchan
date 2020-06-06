@@ -93,6 +93,7 @@ func NewGrabber(st storage.Store, g gossip.Gossiper) *Grabber {
 	cfg := torrent.NewDefaultClientConfig()
 	cfg.DataDir = st.GetRoot()
 	cfg.Seed = true
+	cfg.Debug = false
 	t, _ := torrent.NewClient(cfg)
 	return &Grabber{
 		Client:   t,
