@@ -72,12 +72,12 @@ func (g *Grabber) Grab(metainfoURL string) error {
 	}
 	if t.Seeding() {
 		log.WithFields(logrus.Fields{
-			"url": metaInfoURL,
+			"url": metainfoURL,
 			"infohash": t.InfoHash().HexString(),
 		}).Info("seeding")
 	}else {
 		log.WithFields(logrus.Fields{
-			"url": metaInfoURL,
+			"url": metainfoURL,
 			"infohash": t.InfoHash().HexString(),
 		}).Info("downloading")
 		t.DownloadAll()
