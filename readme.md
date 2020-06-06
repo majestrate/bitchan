@@ -18,10 +18,20 @@ initial build:
 
     $ git clone https://github.com/majestrate/bitchan 
     $ cd bitchan
-    $ make mistake
+    $ make
 
 running:
 
     $ bitchan your.domain.tld
     
 uses port 8800 by default
+
+## development
+
+building:
+
+    $ make mistake
+
+clean:
+
+    $ make repent
