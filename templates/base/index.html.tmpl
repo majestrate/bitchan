@@ -67,11 +67,6 @@
                   e.appendChild(exit_elem);
                   embedPost(wordToCite(word), e);
                 }
-                else
-                {
-                  while(e.children.length > 0)
-                    e.children[0].remove();
-                }
               };
               let text_elem = document.createElement("span");
               text_elem.setAttribute("class", "link");
