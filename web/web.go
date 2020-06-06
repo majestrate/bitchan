@@ -14,6 +14,7 @@ import (
 	"github.com/majestrate/bitchan/db"
 	"github.com/majestrate/bitchan/gossip"
 	"github.com/majestrate/bitchan/model"
+	"github.com/majestrate/bitchan/util"
 	"github.com/zeebo/bencode"
 	"io"
 	"io/ioutil"
@@ -141,7 +142,7 @@ func (m *MiddleWare) makePost(hdr *multipart.FileHeader, text string) (p *model.
 	os.Mkdir(torrent_rootf, os.FileMode(0700))
 	torrent_fname := filepath.Join(torrent_rootf, fname)
 
-	err = os.Rename(tmpfile, torrent_fname)
+	err = util.Move(tmpfile, torrent_fname)
 	if err != nil {
 		os.Remove(tmpfile)
 		return nil, err
@@ -161,10 +162,10 @@ func (m *MiddleWare) makePost(hdr *multipart.FileHeader, text string) (p *model.
 		if err == nil {
 			_, err = os.Stat(real_fname)
 			if os.IsNotExist(err) {
-				err = os.Rename(torrent_fname, real_fname)
+				err = util.Move(torrent_fname, real_fname)
 			}
 			if real_txt != "" && torrent_txt != "" {
-				os.Rename(torrent_txt, real_txt)
+				util.Move(torrent_txt, real_txt)
 			}
 		}
 	}
@@ -186,11 +187,9 @@ func (m *MiddleWare) makePost(hdr *multipart.FileHeader, text string) (p *model.
 }
 
 func (m *MiddleWare) torrentURL(t *torrent.Torrent) string {
-	i := t.Info()
-	f := i.UpvertedFiles()
-	n := f[0].DisplayPath(i)
-	idx := strings.LastIndex(n, ".")
-	return m.makeFilesURL(n[0:idx])
+	mi := t.Metainfo()
+	info, _ := mi.UnmarshalInfo()
+	return m.makeFilesURL(info.Name)
 }
 
 func (m *MiddleWare) SetupRoutes() {
@@ -279,7 +278,7 @@ func (m *MiddleWare) SetupRoutes() {
 
 		f, err := c.FormFile("file")
 		if err != nil {
-			c.String(http.StatusInternalServerError, err.Error())
+			c.String(http.StatusInternalServerError, "no file provided ("+err.Error()+")")
 			return
 		}
 
