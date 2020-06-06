@@ -54,13 +54,17 @@
               let span = document.createElement("span");
               let e = document.createElement("div");
               span.appendChild(e);
-              span.onmouseover = (ev) => {
+              span.onclick = (ev) => {
                 console.log("Show magnet : "+word);
-                embedPost(wordToCite(word), e);
-              };
-              span.onmouseout = (ev) => {
-                while(e.children.length)
-                  e.children[0].remove();
+                if(e.children.length == 0)
+                {
+                  embedPost(wordToCite(word), e);
+                }
+                else
+                {
+                  while(e.children.length > 0)
+                    e.children[0].remove();
+                }
               };
               span.setAttribute("class", "link");
               span.appendChild(document.createTextNode(word));
