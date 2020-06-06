@@ -34,12 +34,13 @@
     </div>
     <script>
       const wordIsInfoHash = (word) => {
+        word = word.replace(/(\s)/, "");
         return word.toLowerCase().matchAll(/^[a-f0-9]{40}$/g).length == 1;
       };
       
       const injectCites = (elem) => {
         let newwords = '';
-        const words = elem.innerHTML.split(/(\s)/);
+        const words = elem.innerHTML.split(" ");
         for(let word of words)
         {
           if(wordIsInfoHash(word))
@@ -48,7 +49,7 @@
           }
           else
           {
-            newwords += word;
+            newwords += word + " ";
           }
         }
         elem.innerHTML = newwords;
