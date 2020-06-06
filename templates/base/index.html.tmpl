@@ -35,7 +35,7 @@
     <script>
       const wordIsInfoHash = (word) => {
         word = word.replace(/(\s)/, "");
-        return word.toLowerCase().matchAll(/^[a-f0-9]{40}$/g).length == 1;
+        return word.toLowerCase().match(/^[a-f0-9]{40}$/) != null;
       };
       
       const injectCites = (elem) => {
