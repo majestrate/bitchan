@@ -58,6 +58,13 @@
                 console.log("Show magnet : "+word);
                 if(e.children.length == 0)
                 {
+                  let exit_elem = document.createElement("div");
+                  exit_elem.innerText = "[X]";
+                  exit_elem.onclick = (ev) => {
+                    while(e.children.length > 0)
+                      e.children[0].remove();
+                  };
+                  e.appendChild(exit_elem);
                   embedPost(wordToCite(word), e);
                 }
                 else
