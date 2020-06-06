@@ -41,7 +41,7 @@
       };
       
       const injectCiteLinks = (elem, text) => {
-        for(let line in text.split("\n"))
+        for(let line of text.split("\n"))
         {
           const words = line.split(" ");
           for(let word of words)
