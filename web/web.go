@@ -96,6 +96,21 @@ func newDecoder(r io.Reader) *bencode.Decoder {
 	return dec
 }
 
+func (m *MiddleWare) renderDirJSON(dirname string, ctx *gin.Context) {
+	f, err := os.Open(dirname)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, map[string]interface{}{"error": err.Error()})
+		return
+	}
+	files, err := f.Readdirnames(0)
+	f.Close()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, map[string]interface{}{"error": err.Error()})
+		return
+	}
+	ctx.JSON(http.StatusOK, map[string]interface{}{"files": files})
+}
+
 func (m *MiddleWare) makeFilesURL(fname string) string {
 	return "http://" + net.JoinHostPort(m.hostname, m.port) + "/files/" + filepath.Base(fname)
 }
@@ -216,6 +231,27 @@ func (m *MiddleWare) SetupRoutes() {
 
 	m.router.StaticFS("/files", http.Dir(m.Api.Storage.GetRoot()))
 
+	m.router.GET("/bitchan/v1/files.json", func(c *gin.Context) {
+		path := c.DefaultQuery("name", "")
+		name := filepath.Clean(path)
+		if len(name) == 0 {
+			infohash_hex := c.DefaultQuery("info_hash", "")
+			h := metainfo.NewHashFromHex(infohash_hex[:])
+			t, ok := m.Api.Torrent.Client.Torrent(h)
+			if ! ok {
+				c.JSON(http.StatusNotFound, map[string]interface{}{"error": "not found"})
+				return
+			}
+			name = t.Name()
+		}
+		if len(name) == 0 || name == "." {
+			c.JSON(http.StatusNotFound, map[string]interface{}{"error": "no name or infohash provided"})
+			return
+		}
+		root := m.Api.Storage.GetRoot()
+		m.renderDirJSON(filepath.Join(root, name), c)
+	})
+	
 	m.router.GET("/bitchan/v1/posts.json", func(c *gin.Context) {
 		limit_str := c.DefaultQuery("limit", "10")
 		limit, _ := strconv.Atoi(limit_str)
@@ -225,9 +261,12 @@ func (m *MiddleWare) SetupRoutes() {
 		if limit > 10 {
 			limit = 10
 		}
-		var posts []string
+		var posts []model.PostInfo
 		m.Api.Torrent.ForEachSeed(func(t *torrent.Torrent) {
-			posts = append(posts, t.InfoHash().HexString())
+			posts = append(posts, model.PostInfo{
+				InfoHash: t.InfoHash().HexString(),
+				Name: t.Name(),
+			})
 		})
 		c.JSON(http.StatusOK, gin.H{
 			"posts": posts,
@@ -278,7 +317,7 @@ func (m *MiddleWare) SetupRoutes() {
 
 		f, err := c.FormFile("file")
 		if err != nil {
-			c.String(http.StatusInternalServerError, "no file provided ("+err.Error()+")")
+			c.String(http.StatusInternalServerError, "no file provided ("+ err.Error() + ")")
 			return
 		}
 

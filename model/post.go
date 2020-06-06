@@ -6,6 +6,11 @@ import (
 	"lukechampine.com/blake3"
 )
 
+type PostInfo struct {
+	InfoHash string `json:"info_hash"`
+	Name string `json:"name"`
+}
+
 type Post struct {
 	MetaInfoURL string `bencode:"bitchan-metainfo-url"`
 	Version     string `bencode:"bitchan-version",omit-empty`

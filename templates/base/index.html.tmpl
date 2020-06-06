@@ -28,6 +28,8 @@
       <textarea name="comment"></textarea>
       <input type="submit" value="post" />
     </form>
+    <hr />
+    <label for="posts">active posts</label>
     <div id="posts">
     </div>
     <script>
@@ -37,15 +39,15 @@
   .then(data => {
     if(data['posts']) 
     {
-    for(post of data['posts'])
-    {
-      let e = document.createElement("div");
-      let a = document.createElement("a");
-      a.href = "/bitchan/v1/post?infohash_hex="+post;
-      a.innerText = post;
-      e.appendChild(a);
-      root.appendChild(e);
-    }
+      for(post of data['posts'])
+      {
+        let e = document.createElement("div");
+        let a = document.createElement("a");
+        a.href = "/bitchan/v1/post?infohash_hex="+post.info_hash;
+        a.innerText = post.name;
+        e.appendChild(a);
+        root.appendChild(e);
+      }
     }
   })
   .catch(error => console.error(error))
