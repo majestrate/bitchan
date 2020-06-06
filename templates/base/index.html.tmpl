@@ -41,24 +41,26 @@
       };
       
       const injectCiteLinks = (elem, text) => {
-        let newwords = '';
-        const words = text.split(" ");
-        for(let word of words)
+        for(let line in text.split("\n"))
         {
-          if(wordIsCite(word))
+          const words = line.split(" ");
+          for(let word of words)
           {
-            console.log("found magnet: "+word);
-            let span = document.createElement("span");
-            span.onclick = (ev) => {
-              console.log("Show magnet : "+word);
-            };
-            span.setAttribute("class", "link");
-            span.appendChild(document.createTextNode(word));
-            elem.appendChild(span);
-          }
-          else
-          {
-            elem.appendChild(document.createTextNode(word+" "));
+            if(wordIsCite(word))
+            {
+              console.log("found magnet: "+word);
+              let span = document.createElement("span");
+              span.onclick = (ev) => {
+                console.log("Show magnet : "+word);
+              };
+              span.setAttribute("class", "link");
+              span.appendChild(document.createTextNode(word));
+              elem.appendChild(span);
+            }
+            else
+            {
+              elem.appendChild(document.createTextNode(word+" "));
+            }
           }
         }
       };
