@@ -4,3 +4,8 @@ html, body {
     background-color: #ddd;
     color: #333;
 }
+
+.link {
+    color: #dab;
+    font-style: italic;
+}
