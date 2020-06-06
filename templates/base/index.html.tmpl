@@ -33,6 +33,27 @@
     <div id="posts">
     </div>
     <script>
+      const wordIsInfoHash(word) => {
+        return word.toLowerCase().matchAll(/[abcdef1234567890]{40}$/).length == 1;
+      };
+      
+      const injectCites = (elem) => {
+        let newwords = '';
+        const words = elem.innerHTML.split(" ");
+        for(word of words)
+        {
+          if(wordIsInfoHash(word))
+          {
+            newwords += '<span onhover=preview_post("'+word+'")>' + word + '</span>';
+          }
+          else
+          {
+            newwords += word + " ";
+          }
+        }
+        elem.innerHTML = newwords;
+      };
+      
       const fileIsKind = (file, kinds) => {
         const f = file.toLowerCase();
         for(t of kinds)
@@ -87,7 +108,10 @@
               {
                 fetch(file).then(response => response.text()).then(data => {
                   var txt_elem = document.createTextNode(data);
-                  e.appendChild(txt_elem);
+                  var elem = document.createElement("pre");
+                  elem.setAttribute("class", "citable_text");
+                  elem.appendChild(txt_elem);
+                  e.appendChild(elem);
                 });
               }
               if(!allowEmbedFile(file))
@@ -117,6 +141,9 @@
             }
           });
       }
+      let elems = document.getElementsByClassName("citable_text");
+      for(elem of elems)
+        injectCites(elem);
     }
   })
   .catch(error => console.error(error))
