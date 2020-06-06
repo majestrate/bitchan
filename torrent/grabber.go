@@ -2,6 +2,7 @@ package torrent
 
 import (
 	"errors"
+	alog "github.com/anacrolix/log"
 	"github.com/anacrolix/torrent"
 	"github.com/anacrolix/torrent/metainfo"
 	"github.com/majestrate/bitchan/gossip"
@@ -94,7 +95,7 @@ func NewGrabber(st storage.Store, g gossip.Gossiper) *Grabber {
 	cfg.DataDir = st.GetRoot()
 	cfg.Seed = true
 	cfg.Debug = false
-	cfg.Logger = nil
+	cfg.Logger = alog.Discard
 	t, _ := torrent.NewClient(cfg)
 	return &Grabber{
 		Client:   t,

@@ -6,6 +6,7 @@ require (
 	github.com/RoaringBitmap/roaring v0.4.23 // indirect
 	github.com/anacrolix/dht/v2 v2.6.1 // indirect
 	github.com/anacrolix/go-libutp v1.0.3 // indirect
+	github.com/anacrolix/log v0.7.0
 	github.com/anacrolix/multiless v0.0.0-20200413040533-acfd16f65d5d // indirect
 	github.com/anacrolix/torrent v1.15.2
 	github.com/elliotchance/orderedmap v1.2.2 // indirect
