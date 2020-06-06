@@ -39,7 +39,9 @@
         word = word.substr(2).replace(/(\s)/, "");
         return word.toLowerCase().match(/^[a-f0-9]{40}$/) != null;
       };
-      
+      const wordToCite = (word) => {
+        return word.substr(2).replace(/(\s)/, "");
+      };
       const injectCiteLinks = (elem, text) => {
         for(let line of text.split("\n"))
         {
@@ -50,8 +52,15 @@
             {
               console.log("found magnet: "+word);
               let span = document.createElement("span");
-              span.onclick = (ev) => {
+              let e = document.createElement("span");
+              span.appendChild(e);
+              span.onmouseover = (ev) => {
                 console.log("Show magnet : "+word);
+                embedPost(wordToCite(word), e);
+              };
+              span.onmouseout = (ev) => {
+                while(e.children.length)
+                  e.children[0].remove();
               };
               span.setAttribute("class", "link");
               span.appendChild(document.createTextNode(word));
@@ -93,29 +102,23 @@
           return true;
         return false;
       };
-      let root = document.getElementById("posts");
-      fetch('/bitchan/v1/posts.json')
-  .then(response => response.json())
-  .then(data => {
-    if(data['posts']) 
-    {
-      for(let post of data['posts'])
-      {
+
+      const embedPost = (infohash_hex, root) => {
         let e = document.createElement("div");
         let cite = document.createElement("span");
         cite.innerText = "[cite]";
         cite.onclick = (ev) => {
           const postarea = document.getElementById("poster");
-          postarea.value += ">>" + post.infohash_hex + "\n";
+          postarea.value += ">>" + infohash_hex + "\n";
         };
         e.appendChild(cite);
         let a = document.createElement("a");
-        a.href = "magnet:?xt=urn:btih:" + post.infohash_hex + "&ws=" + encodeURIComponent(location.protocol + "//" + location.host + "/files/");
+        a.href = "magnet:?xt=urn:btih:" + infohash_hex + "&ws=" + encodeURIComponent(location.protocol + "//" + location.host + "/files/");
         a.innerText = "[magnet]";
         e.appendChild(a);
         root.appendChild(e);
         root.appendChild(document.createElement("hr"));
-        fetch("/bitchan/v1/files.json?infohash_hex="+post.infohash_hex).then(response => response.json()).
+        fetch("/bitchan/v1/files.json?infohash_hex="+infohash_hex).then(response => response.json()).
           then(data => {
             for(let file of data['files'])
             {
@@ -154,6 +157,17 @@
               }
             }
           });
+      };
+      
+      let root = document.getElementById("posts");
+      fetch('/bitchan/v1/posts.json')
+  .then(response => response.json())
+  .then(data => {
+    if(data['posts']) 
+    {
+      for(let post of data['posts'])
+      {
+        embedPost(post.infohash_hex, root);
       }
     }
   })
