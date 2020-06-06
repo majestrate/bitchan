@@ -33,8 +33,10 @@
     <div id="posts">
     </div>
     <script>
-      const wordIsInfoHash = (word) => {
-        word = word.replace(/(\s)/, "");
+      const wordIsCite = (word) => {
+        if(!word.startsWith(">>"))
+          return false;
+        word = word.substr(2).replace(/(\s)/, "");
         return word.toLowerCase().match(/^[a-f0-9]{40}$/) != null;
       };
       
@@ -43,7 +45,7 @@
         const words = text.split(" ");
         for(let word of words)
         {
-          if(wordIsInfoHash(word))
+          if(wordIsCite(word))
           {
             console.log("found magnet: "+word);
             let span = document.createElement("span");
@@ -97,11 +99,14 @@
       for(let post of data['posts'])
       {
         let e = document.createElement("div");
+        let cite = document.createElement("span");
+        cite.innerText = "[cite]";
+        cite.onclick = (ev) => {
+          const postarea = document.getElementById("poster");
+          postarea.value += ">>" + post.infohash_hex + "\n";
+        };
+        e.appendChild(cite);
         let a = document.createElement("a");
-        a.href = "/bitchan/v1/post?infohash_hex="+post.infohash_hex;
-        a.innerText = "[link]";
-        e.appendChild(a);
-        a = document.createElement("a");
         a.href = "magnet:?xt=urn:btih:" + post.infohash_hex + "&ws=" + encodeURIComponent(location.protocol + "//" + location.host + "/files/");
         a.innerText = "[magnet]";
         e.appendChild(a);
