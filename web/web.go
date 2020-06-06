@@ -437,7 +437,7 @@ func (m *MiddleWare) SetupRoutes() {
 		c.Header("Content-Type", BitchanPubKeyContentType)
 		c.String(http.StatusOK, encodePubKey(pk))
 	})
-	m.router.GET("/bitchan/v1/peer", func(c *gin.Context) {
+	m.router.GET("/bitchan/v1/peer-with-me", func(c *gin.Context) {
 		port := c.DefaultQuery("port", "8800")
 		rhost, _, err := net.SplitHostPort(c.Request.RemoteAddr)
 		if err != nil {
