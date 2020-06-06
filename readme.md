@@ -23,7 +23,7 @@ running:
 
     $ ./bitchand your.domain.tld
     
-uses port 8800 by default
+then go to `http://your.domain.tld:8800/`
 
 add the bootstrap node (from your server server):
 
