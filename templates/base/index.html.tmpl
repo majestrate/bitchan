@@ -73,6 +73,10 @@
         a.href = "/bitchan/v1/post?infohash_hex="+post.infohash_hex;
         a.innerText = "[link]";
         e.appendChild(a);
+        a = document.createElement("a");
+        a.href = "magnet:?xt=urn:btih:" + post.infohash_hex;
+        a.innerText = "[magnet]";
+        e.appendChild(a);
         root.appendChild(e);
         root.appendChild(document.createElement("hr"));
         fetch("/bitchan/v1/files.json?infohash_hex="+post.infohash_hex).then(response => response.json()).
