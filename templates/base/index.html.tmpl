@@ -52,9 +52,9 @@
             {
               console.log("found magnet: "+word);
               let span = document.createElement("div");
-              span.setAttribute("class", "cite");
               let text_elem = document.createElement("span");
               let e = document.createElement("div");
+              e.setAttribute("class", "cite");
               span.appendChild(e);
               text_elem.onclick = (ev) => {
                 console.log("Show magnet : "+word);
