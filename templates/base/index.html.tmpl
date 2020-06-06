@@ -38,21 +38,27 @@
         return word.toLowerCase().match(/^[a-f0-9]{40}$/) != null;
       };
       
-      const injectCites = (elem) => {
+      const injectCiteLinks = (elem, text) => {
         let newwords = '';
-        const words = elem.innerHTML.split(" ");
+        const words = text.split(" ");
         for(let word of words)
         {
           if(wordIsInfoHash(word))
           {
-            newwords += '<span class="link" onclick=preview_post("'+word+'")>' + word + '</span>';
+            console.log("found magnet: "+word);
+            let span = document.createElement("span");
+            span.onclick = (ev) => {
+              console.log("Show magnet : "+word);
+            };
+            span.setAttribute("class", "link");
+            span.appendChild(document.createTextNode(word));
+            elem.appendChild(span);
           }
           else
           {
-            newwords += word + " ";
+            elem.appendChild(document.createTextNode(word+" "));
           }
         }
-        elem.innerHTML = newwords;
       };
       
       const fileIsKind = (file, kinds) => {
@@ -108,11 +114,9 @@
               if(fileIsKind(file, ["txt"]))
               {
                 fetch(file).then(response => response.text()).then(data => {
-                  var txt_elem = document.createTextNode(data);
                   var elem = document.createElement("pre");
                   elem.setAttribute("class", "citable_text");
-                  elem.appendChild(txt_elem);
-                  injectCites(elem);
+                  injectCiteLinks(elem, data);
                   e.appendChild(elem);
                 });
               }
