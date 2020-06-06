@@ -52,9 +52,10 @@
             {
               console.log("found magnet: "+word);
               let span = document.createElement("span");
+              let text_elem = document.createElement("span");
               let e = document.createElement("div");
               span.appendChild(e);
-              span.onclick = (ev) => {
+              text_elem.onclick = (ev) => {
                 console.log("Show magnet : "+word);
                 if(e.children.length == 0)
                 {
@@ -68,7 +69,6 @@
                   embedPost(wordToCite(word), e);
                 }
               };
-              let text_elem = document.createElement("span");
               text_elem.setAttribute("class", "link");
               text_elem.appendChild(document.createTextNode(word));
               span.appendChild(text_elem);
