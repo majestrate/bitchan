@@ -49,7 +49,7 @@
         return fileIsKind(file, ["png", "gif", "jpeg", "jpg", "webp"]);
       };
       const fileIsAudio = (file) => {
-        return fileIsKind(file, ["mp3", "oga", "opus"]);
+        return fileIsKind(file, ["mp3", "oga", "opus", "ogg"]);
       };
       const allowEmbedFile = (file) => {
         if(fileIsImage(file))
@@ -73,6 +73,8 @@
         a.href = "/bitchan/v1/post?infohash_hex="+post.infohash_hex;
         a.innerText = "[link]";
         e.appendChild(a);
+        root.appendChild(e);
+        root.appendChild(document.createElement("hr"));
         fetch("/bitchan/v1/files.json?infohash_hex="+post.infohash_hex).then(response => response.json()).
           then(data => {
             for(file of data['files'])
@@ -100,9 +102,15 @@
                 vid_elem.style = "max-width: 500px;";
                 e.appendChild(vid_elem);                
               }
+            
+              if(fileIsAudio(file))
+              {
+                let audio_elem = document.createElement("audio");
+                audio_elem.src = file;
+                audio_elem.controls = "controls";
+                e.appendChild(audio_elem); 
+              }
             }
-            root.appendChild(e);
-            root.appendChild(document.createElement("hr"));
           });
       }
     }

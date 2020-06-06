@@ -25,6 +25,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -96,6 +97,55 @@ func newDecoder(r io.Reader) *bencode.Decoder {
 	return dec
 }
 
+type sortedPostInfo struct {
+	data []model.PostInfo
+}
+
+func (s *sortedPostInfo) Load(root string) error {
+	for idx, data := range s.data {
+		var meta model.Post
+		fpath := filepath.Join(root, data.InfoHash+".bitchan")
+		f, err := os.Open(fpath)
+		if err != nil {
+			return err
+		}
+		err = meta.ReadFromFile(f)
+		if err != nil {
+			return err
+		}
+		s.data[idx].PostedAt = meta.PostedAt
+	}
+	return nil
+}
+
+func (s *sortedPostInfo) Len() int {
+	return len(s.data)
+}
+
+func (s *sortedPostInfo) Less(i, j int) bool {
+	return s.data[j].PostedAt < s.data[i].PostedAt
+}
+
+func (s *sortedPostInfo) Swap(i, j int) {
+	s.data[i], s.data[j] = s.data[j], s.data[i]
+}
+
+type sortedFileInfo struct {
+	data []os.FileInfo
+}
+
+func (s *sortedFileInfo) Len() int {
+	return len(s.data)
+}
+
+func (s *sortedFileInfo) Less(i, j int) bool {
+	return s.data[i].ModTime().After(s.data[j].ModTime())
+}
+
+func (s *sortedFileInfo) Swap(i, j int) {
+	s.data[i], s.data[j] = s.data[j], s.data[i]
+}
+
 func (m *MiddleWare) renderDirJSON(dirname string, ctx *gin.Context) {
 	f, err := os.Open(dirname)
 	if err != nil {
@@ -108,9 +158,11 @@ func (m *MiddleWare) renderDirJSON(dirname string, ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, map[string]interface{}{"error": err.Error()})
 		return
 	}
+	infos := &sortedFileInfo{data: fileInfos[:]}
+	sort.Sort(infos)
 	var files []string
-	for _, info := range fileInfos {
-		files = append(files, "/files/" + filepath.Base(dirname) + "/" + info.Name())
+	for _, info := range infos.data {
+		files = append(files, "/files/"+filepath.Base(dirname)+"/"+info.Name())
 	}
 	ctx.JSON(http.StatusOK, map[string]interface{}{"files": files})
 }
@@ -198,13 +250,19 @@ func (m *MiddleWare) makePost(hdr *multipart.FileHeader, text string) (p *model.
 	}
 	now := time.Now().UnixNano()
 	p = &model.Post{
-		MetaInfoURL: m.makeFilesURL(torrentFile),
-		PostedAt:    now,
+		MetaInfoURL:  m.makeFilesURL(torrentFile),
+		PostedAt:     now,
 		MetaInfoHash: infohash_hex,
 	}
 	p.Sign(m.privkey)
 	go m.Api.Torrent.Grab(p.MetaInfoURL)
-	return p, nil
+	metaFile := filepath.Join(m.Api.Storage.GetRoot(), infohash_hex+".bitchan")
+	mf, err := os.Create(metaFile)
+	if err == nil {
+		err = p.WriteToFile(mf)
+		mf.Close()
+	}
+	return p, err
 }
 
 func (m *MiddleWare) torrentURL(t *torrent.Torrent) string {
@@ -243,12 +301,12 @@ func (m *MiddleWare) SetupRoutes() {
 			infohash_hex := c.DefaultQuery("infohash_hex", "")
 			h := metainfo.NewHashFromHex(infohash_hex[:])
 			t, ok := m.Api.Torrent.Client.Torrent(h)
-			if ! ok {
+			if !ok {
 				c.JSON(http.StatusNotFound, map[string]interface{}{"error": "not found"})
 				return
 			}
 			path = t.Name()
-			
+
 		}
 		name := filepath.Clean(path)
 		if len(name) == 0 || name == "." {
@@ -258,7 +316,7 @@ func (m *MiddleWare) SetupRoutes() {
 		root := m.Api.Storage.GetRoot()
 		m.renderDirJSON(filepath.Join(root, name), c)
 	})
-	
+
 	m.router.GET("/bitchan/v1/posts.json", func(c *gin.Context) {
 		limit_str := c.DefaultQuery("limit", "10")
 		limit, _ := strconv.Atoi(limit_str)
@@ -268,15 +326,23 @@ func (m *MiddleWare) SetupRoutes() {
 		if limit > 10 {
 			limit = 10
 		}
-		var posts []model.PostInfo
+		var posts sortedPostInfo
 		m.Api.Torrent.ForEachSeed(func(t *torrent.Torrent) {
-			posts = append(posts, model.PostInfo{
+			posts.data = append(posts.data, model.PostInfo{
 				InfoHash: t.InfoHash().HexString(),
-				Name: t.Name(),
+				Name:     t.Name(),
 			})
 		})
+		err := posts.Load(m.Api.Storage.GetRoot())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		sort.Sort(&posts)
 		c.JSON(http.StatusOK, gin.H{
-			"posts": posts,
+			"posts": posts.data,
 		})
 	})
 
@@ -324,7 +390,7 @@ func (m *MiddleWare) SetupRoutes() {
 
 		f, err := c.FormFile("file")
 		if err != nil {
-			c.String(http.StatusInternalServerError, "no file provided ("+ err.Error() + ")")
+			c.String(http.StatusInternalServerError, "no file provided ("+err.Error()+")")
 			return
 		}
 
