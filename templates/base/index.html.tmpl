@@ -74,7 +74,7 @@
         a.innerText = "[link]";
         e.appendChild(a);
         a = document.createElement("a");
-        a.href = "magnet:?xt=urn:btih:" + post.infohash_hex + "&xs=" + location.protocol + "//" + location.host + "/files/" + post.name;
+        a.href = "magnet:?xt=urn:btih:" + post.infohash_hex + encodeURIComponent("&xs=" + location.protocol + "//" + location.host + "/files/" + post.name);
         a.innerText = "[magnet]";
         e.appendChild(a);
         root.appendChild(e);
