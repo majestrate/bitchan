@@ -39,7 +39,7 @@
       
       const injectCites = (elem) => {
         let newwords = '';
-        const words = elem.innerHTML.split();
+        const words = elem.innerHTML.split(/(\s)/);
         for(let word of words)
         {
           console.log(word);
