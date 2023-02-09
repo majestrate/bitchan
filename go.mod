@@ -10,7 +10,7 @@ require (
 	github.com/anacrolix/multiless v0.0.0-20200413040533-acfd16f65d5d // indirect
 	github.com/anacrolix/torrent v1.15.2
 	github.com/elliotchance/orderedmap v1.2.2 // indirect
-	github.com/gin-gonic/gin v1.7.0
+	github.com/gin-gonic/gin v1.7.7
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/huandu/xstrings v1.3.1 // indirect
 	github.com/jcmturner/gokrb5/v8 v8.3.0 // indirect
